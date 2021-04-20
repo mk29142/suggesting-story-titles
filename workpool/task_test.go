@@ -17,12 +17,12 @@ var _ = Describe("Task", func() {
 		clientFake *internal.FakeClient
 		t          workpool.Task
 
-		coords = domain.Coordinates{
+		coords = domain.Metadata{
 			Latitude:  50.123,
 			Longitude: 0.456,
 		}
 
-		postcode = "SS16 5HE"
+		location = "London"
 	)
 
 	BeforeEach(func() {
@@ -32,7 +32,7 @@ var _ = Describe("Task", func() {
 
 	Describe("Process", func() {
 		var (
-			result workpool.CoordinatesWithPostcode
+			result workpool.Location
 			err    error
 		)
 
@@ -42,13 +42,13 @@ var _ = Describe("Task", func() {
 
 		When("success", func() {
 			BeforeEach(func() {
-				resp := client.LatLongPostcode{
+				resp := client.Location{
 					Latitude:  coords.Latitude,
 					Longitude: coords.Longitude,
-					Postcode:  postcode,
+					Name:      location,
 				}
 
-				clientFake.PostcodeReturns(resp, nil)
+				clientFake.LocationReturns(resp, nil)
 			})
 
 			It("does not error", func() {
@@ -56,23 +56,23 @@ var _ = Describe("Task", func() {
 			})
 
 			It("calls client", func() {
-				Expect(clientFake.PostcodeCallCount()).To(Equal(1))
-				got := clientFake.PostcodeArgsForCall(0)
+				Expect(clientFake.LocationCallCount()).To(Equal(1))
+				got := clientFake.LocationArgsForCall(0)
 				Expect(got).To(Equal(coords))
 			})
 
 			It("returns correct result", func() {
-				Expect(result).To(Equal(workpool.CoordinatesWithPostcode{
-					Lat:      coords.Latitude,
-					Long:     coords.Longitude,
-					PostCode: postcode,
+				Expect(result).To(Equal(workpool.Location{
+					Lat:  coords.Latitude,
+					Long: coords.Longitude,
+					Name: location,
 				}))
 			})
 		})
 
-		When("client fails to get postcode", func() {
+		When("client fails to get location", func() {
 			BeforeEach(func() {
-				clientFake.PostcodeReturns(client.LatLongPostcode{}, fmt.Errorf("something went wrong"))
+				clientFake.LocationReturns(client.Location{}, fmt.Errorf("something went wrong"))
 			})
 
 			It("returns error", func() {

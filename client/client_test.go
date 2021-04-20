@@ -30,27 +30,27 @@ var _ = Describe("Client", func() {
 		service = client.New(apiToken, clientFake)
 	})
 
-	Describe("Postcode", func() {
+	Describe("Name", func() {
 		var (
-			input domain.Coordinates
-			result client.LatLongPostcode
+			input domain.Metadata
+			result client.Location
 			err error
 		)
 
 		JustBeforeEach(func() {
-			result, err = service.Postcode(input)
+			result, err = service.Location(input)
 		})
 
 		When("given valid coordinates", func() {
 			BeforeEach(func() {
-				input = domain.Coordinates{
+				input = domain.Metadata{
 					Latitude:  50.123,
 					Longitude: 0.4021,
 				}
 				resp := `{
 					"features": [
               { 
-                "text": "SS16 5HE"
+                "text": "London"
   						}
 						]
 				}`
@@ -66,10 +66,10 @@ var _ = Describe("Client", func() {
 			})
 
 			It("should decode response correctly", func() {
-				Expect(result).To(Equal(client.LatLongPostcode{
+				Expect(result).To(Equal(client.Location{
 					Latitude:  input.Latitude,
 					Longitude: input.Longitude,
-					Postcode:  "SS16 5HE",
+					Name:      "London",
 				}))
 			})
 
@@ -83,7 +83,7 @@ var _ = Describe("Client", func() {
 
 				By("using the correct url", func() {
 					expectedUrl :=
-						fmt.Sprintf("https://api.mapbox.com/geocoding/v5/mapbox.places/%f,%f.json?types=postcode&limit=1&access_token=%s",
+						fmt.Sprintf("https://api.mapbox.com/geocoding/v5/mapbox.places/%f,%f.json?types=place&limit=1&access_token=%s",
 							input.Longitude, input.Latitude, apiToken)
 
 					Expect(got.URL.String()).To(Equal(expectedUrl))
@@ -93,7 +93,7 @@ var _ = Describe("Client", func() {
 
 		When("response cannot be decoded", func() {
 			BeforeEach(func() {
-				input = domain.Coordinates{
+				input = domain.Metadata{
 					Latitude:  50.123,
 					Longitude: 0.4021,
 				}
@@ -111,7 +111,7 @@ var _ = Describe("Client", func() {
 
 		When("request does not return 200", func() {
 			BeforeEach(func() {
-				input = domain.Coordinates{
+				input = domain.Metadata{
 					Latitude:  50.123,
 					Longitude: 0.4021,
 				}
@@ -131,7 +131,7 @@ var _ = Describe("Client", func() {
 
 		When("request to api fails", func() {
 			BeforeEach(func() {
-				input = domain.Coordinates{
+				input = domain.Metadata{
 					Latitude:  50.123,
 					Longitude: 0.4021,
 				}

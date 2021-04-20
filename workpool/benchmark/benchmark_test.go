@@ -14,8 +14,8 @@ var _ = Describe("Benchmark", func() {
 		fakeClient *internal.FakeClient
 		tasks []workpool.Task
 
-		coords                 domain.Coordinates
-		postcode               string
+		coords                 domain.Metadata
+		location               string
 		higherConcurrencyValue int
     lowerConcurrencyValue  int
 		numTasks               int
@@ -23,11 +23,11 @@ var _ = Describe("Benchmark", func() {
 
 	BeforeEach(func() {
 		fakeClient = new(internal.FakeClient)
-		coords = domain.Coordinates{
+		coords = domain.Metadata{
 			Latitude:  50.123,
 			Longitude: 0.456,
 		}
-		postcode = "SS16 5HE"
+		location = "London"
 		higherConcurrencyValue = 2
 		lowerConcurrencyValue = 6
 		numTasks = 1000000
@@ -36,10 +36,10 @@ var _ = Describe("Benchmark", func() {
 			tasks = append(tasks, workpool.NewTask(coords, fakeClient))
 		}
 
-		fakeClient.PostcodeReturns(client.LatLongPostcode{
+		fakeClient.LocationReturns(client.Location{
 			Latitude:  coords.Latitude,
 			Longitude: coords.Longitude,
-			Postcode:  postcode,
+			Name:      location,
 		}, nil)
 	})
 
@@ -48,10 +48,10 @@ var _ = Describe("Benchmark", func() {
 			fasterPool workpool.Pool
 			slowerPool workpool.Pool
 
-			res1 []domain.Postcode
+			res1 []domain.Location
 			errs1 []error
 
-			res2 []domain.Postcode
+			res2 []domain.Location
 			errs2 []error
 		)
 
@@ -61,10 +61,10 @@ var _ = Describe("Benchmark", func() {
 
 			go func() {
 				for out := range fasterPool.Output() {
-					res1 = append(res1, domain.Postcode{
+					res1 = append(res1, domain.Location{
 						Latitude:  out.Lat,
 						Longitude: out.Long,
-						Postcode:  out.PostCode,
+						Name:      out.Name,
 					})
 				}
 			}()
@@ -77,10 +77,10 @@ var _ = Describe("Benchmark", func() {
 
 			go func() {
 				for out := range slowerPool.Output() {
-					res2 = append(res2, domain.Postcode{
+					res2 = append(res2, domain.Location{
 						Latitude:  out.Lat,
 						Longitude: out.Long,
-						Postcode:  out.PostCode,
+						Name:      out.Name,
 					})
 				}
 			}()

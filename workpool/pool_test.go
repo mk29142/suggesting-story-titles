@@ -15,18 +15,18 @@ var _ = Describe("Pool", func() {
 		fakeClient *internal.FakeClient
 		tasks []workpool.Task
 
-		coords domain.Coordinates
-		postcode string
+		coords      domain.Metadata
+		location    string
 		concurrency int
 	)
 
 	BeforeEach(func() {
 		fakeClient = new(internal.FakeClient)
-		coords = domain.Coordinates{
+		coords = domain.Metadata{
 			Latitude:  50.123,
 			Longitude: 0.456,
 		}
-		postcode = "SS16 5HE"
+		location = "London"
 		concurrency = 2
 
 		task1 := workpool.NewTask(coords, fakeClient)
@@ -35,10 +35,10 @@ var _ = Describe("Pool", func() {
 
 		tasks = []workpool.Task{task1, task2, task3}
 
-		fakeClient.PostcodeReturns(client.LatLongPostcode{
+		fakeClient.LocationReturns(client.Location{
 			Latitude:  coords.Latitude,
 			Longitude: coords.Longitude,
-			Postcode:  postcode,
+			Name:      location,
 		}, nil)
 	})
 
@@ -53,17 +53,17 @@ var _ = Describe("Pool", func() {
 
 		When("success", func() {
 			var (
-				res []domain.Postcode
+				res []domain.Location
 				errs []error
 			)
 
 			BeforeEach(func() {
 				go func() {
 					for out := range pool.Output() {
-						res = append(res, domain.Postcode{
+						res = append(res, domain.Location{
 							Latitude:  out.Lat,
 							Longitude: out.Long,
-							Postcode:  out.PostCode,
+							Name:      out.Name,
 						})
 					}
 				}()
@@ -78,21 +78,21 @@ var _ = Describe("Pool", func() {
 			It("adds to output channel", func() {
 				pool.Run()
 
-				expect := []domain.Postcode {
+				expect := []domain.Location{
 					{
 						Latitude:  coords.Latitude,
 						Longitude: coords.Longitude,
-						Postcode:  postcode,
+						Name:      location,
 					},
 					{
 						Latitude:  coords.Latitude,
 						Longitude: coords.Longitude,
-						Postcode:  postcode,
+						Name:      location,
 					},
 					{
 						Latitude:  coords.Latitude,
 						Longitude: coords.Longitude,
-						Postcode:  postcode,
+						Name:      location,
 					},
 				}
 
@@ -108,19 +108,19 @@ var _ = Describe("Pool", func() {
 
 		When("Error", func() {
 			var (
-				res []domain.Postcode
+				res []domain.Location
 				errs []error
 			)
 
 			BeforeEach(func() {
-				fakeClient.PostcodeReturns(client.LatLongPostcode{}, fmt.Errorf("something went wrong"))
+				fakeClient.LocationReturns(client.Location{}, fmt.Errorf("something went wrong"))
 
 				go func() {
 					for out := range pool.Output() {
-						res = append(res, domain.Postcode{
+						res = append(res, domain.Location{
 							Latitude:  out.Lat,
 							Longitude: out.Long,
-							Postcode:  out.PostCode,
+							Name:      out.Name,
 						})
 					}
 				}()

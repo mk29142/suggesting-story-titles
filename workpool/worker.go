@@ -6,11 +6,11 @@ import (
 
 type Worker struct {
   Tasks   chan Task
-  Outputs chan CoordinatesWithPostcode
+  Outputs chan Location
   Errors  chan error
 }
 
-func NewWorker(tasks chan Task, output chan CoordinatesWithPostcode, errors chan error) Worker {
+func NewWorker(tasks chan Task, output chan Location, errors chan error) Worker {
   return Worker{
     Tasks:     tasks,
     Outputs:   output,

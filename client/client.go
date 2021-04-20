@@ -6,16 +6,18 @@ import (
   "io"
   "net/http"
   "strings"
+  "time"
 
   "github.com/mk29142/suggesting-story-titles/domain"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
-type LatLongPostcode struct {
-  Latitude float64
+type Location struct {
+  Latitude  float64
   Longitude float64
-  Postcode string
+  Timestamp time.Time
+  Name      string
 }
 
 type location struct {
@@ -43,35 +45,36 @@ func New(apiToken string, client client) Client {
   }
 }
 
-func (c Client) Postcode(coordinates domain.Coordinates) (LatLongPostcode, error) {
-   url := fmt.Sprintf("https://api.mapbox.com/geocoding/v5/mapbox.places/%f,%f.json?types=postcode&limit=1&access_token=%s", coordinates.Longitude, coordinates.Latitude, c.ApiToken)
+func (c Client) Location(metadata domain.Metadata) (Location, error) {
+   url := fmt.Sprintf("https://api.mapbox.com/geocoding/v5/mapbox.places/%f,%f.json?types=place&limit=1&access_token=%s", metadata.Longitude, metadata.Latitude, c.ApiToken)
 
   request, err := http.NewRequest(http.MethodGet, url, nil)
   if err != nil {
-    return LatLongPostcode{}, fmt.Errorf("create request: %w", err)
+    return Location{}, fmt.Errorf("create request: %w", err)
   }
 
   response, err := c.Client.Do(request)
   if err != nil {
-    return LatLongPostcode{}, fmt.Errorf("get request: %w", err)
+    return Location{}, fmt.Errorf("get request: %w", err)
   }
 
   if response.StatusCode != http.StatusOK {
-    return LatLongPostcode{}, fmt.Errorf(`unexpected status code "%s"`, strings.ToLower(response.Status))
+    return Location{}, fmt.Errorf(`unexpected status code "%s"`, strings.ToLower(response.Status))
   }
 
   var loc location
   if err := json.NewDecoder(response.Body).Decode(&loc); err != nil {
-    return LatLongPostcode{}, fmt.Errorf("decode response body: %w", err)
+    return Location{}, fmt.Errorf("decode response body: %w", err)
   }
 
-  postcode := loc.Features[0].Text
+  name := loc.Features[0].Text
 
   closeIgnoreErr(response.Body)
-  return LatLongPostcode{
-    Latitude:  coordinates.Latitude,
-    Longitude: coordinates.Longitude,
-    Postcode:  postcode,
+  return Location{
+    Latitude:  metadata.Latitude,
+    Longitude: metadata.Longitude,
+    Name:      name,
+    Timestamp: metadata.Timestamp,
   }, nil
 }
 

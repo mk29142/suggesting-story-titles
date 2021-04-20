@@ -1,74 +1,43 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/mk29142/suggesting-story-titles/client"
-	"github.com/mk29142/suggesting-story-titles/domain"
-	"github.com/mk29142/suggesting-story-titles/workpool"
+	"github.com/mk29142/suggesting-story-titles/csv"
+	"github.com/mk29142/suggesting-story-titles/generator"
+	"github.com/mk29142/suggesting-story-titles/orchestrator"
+	"github.com/mk29142/suggesting-story-titles/service"
 	"net/http"
 	"os"
-	"strconv"
 )
 
 func main() {
 
 	argLength := len(os.Args[1:])
-
-	poolSize := 5
-	if argLength == 1 {
-		_, err := strconv.Atoi(os.Args[argLength])
-		if err == nil {
-			fmt.Println("must provide valid api-token")
-			os.Exit(2)
-		}
-	}
-
-	if argLength > 3 {
-		fmt.Println("can only provide 2 arguments")
+	if argLength < 2 {
+		fmt.Println("must provide csv file and valid api-token")
 		os.Exit(2)
 	}
 
-	poolSizeArg := os.Args[argLength]
-	poolSize, err := strconv.Atoi(poolSizeArg)
+	file := os.Args[1]
+	apiToken := os.Args[2]
+
+	reader := csv.NewReader()
+
+	data, err := reader.Read(file)
 	if err != nil {
-		fmt.Println("must provide valid pool size")
+		fmt.Println("error while reading csv: %w", err)
 		os.Exit(2)
 	}
 
-	apiToken := os.Args[argLength-1]
-
+	suggestor := service.NewSuggestor(generator.TimeBasedGenerator{}, generator.SeasonBasedGenerator{}, generator.GenericGenerator{})
 	client := client.New(apiToken, &http.Client{})
+	o := orchestrator.New(suggestor, client)
 
-	var tasks []workpool.Task
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		var latlong domain.Coordinates
-		json.Unmarshal([]byte(scanner.Text()), &latlong)
-		tasks = append(tasks, workpool.NewTask(latlong, client))
+	titles := o.Titles(data)
+	for _, title := range titles {
+		out, _ := json.Marshal(title)
+		fmt.Println(string(out))
 	}
-
-	pool := workpool.New(tasks, poolSize)
-
-	go func() {
-		for res := range pool.Output() {
-			postcode := domain.Postcode{
-				Latitude:  res.Lat,
-				Longitude: res.Long,
-				Postcode:  res.PostCode,
-			}
-
-			out, _ := json.Marshal(postcode)
-			fmt.Fprintln(os.Stdout, string(out))
-		}
-	}()
-
-	go func() {
-		for err := range pool.Errors() {
-			fmt.Fprintln(os.Stderr,  err)
-		}
-	}()
-
-	pool.Run()
 }
