@@ -3,7 +3,7 @@
 This app takes in a csv file containing lat, long and timestamp 
 and returns a suggested title.
 
-#Input
+# Input
 ```json
 2020-03-30 14:12:19,40.728808,-73.996106
 2020-03-30 14:20:10,40.728656,-73.998790
@@ -11,7 +11,7 @@ and returns a suggested title.
 2020-03-30 14:41:18,40.725468,-73.995701
 ``` 
 
-#Output
+# Output
 ```json
 {"lat":40.728808,"lng":-73.996106,"timestamp":"2020-03-30T14:12:19Z","name":"New York","title":"A blooming spring in New York"}
 {"lat":40.728656,"lng":-73.99879,"timestamp":"2020-03-30T14:20:10Z","name":"New York","title":"Time well spent in New York"}
@@ -19,13 +19,14 @@ and returns a suggested title.
 {"lat":40.725468,"lng":-73.995701,"timestamp":"2020-03-30T14:41:18Z","name":"New York","title":"A fun afternoon in New York"}
 ```
 
-#How to use
+# How to use
 ```bash
-make build
-./suggesting-story-titles <path to csv> <api-token>
+>> make build
+
+>> ./suggesting-story-titles <path to csv> <api-token> > output.txt
 ```
 
-#Setup
+# Setup
 ```bash
 make init
 ```
@@ -40,11 +41,11 @@ Benchmark Tests
 make test-benchmark
 ```
 
-#Design Decisions
+# Design Decisions
 
-###Problem: What is the best way to get the locations from all the coordinates?
+### Problem: What is the best way to get the locations from all the coordinates?
 
-###Solution 1: 
+### Solution 1: 
 Map box provides batching, so you can batch all the `lat,long` combos as query params.
 
 Pros: 
@@ -54,7 +55,7 @@ Cons:
 * Single point of failure, if request fails, all photos won't get their results.
 * Time to execute api-results will get longer and longer given size of csv.
 
-###Solution 2
+### Solution 2
 
 Use a worker pool so that each coordinate is a task and tasks are processed concurrently. 
 
@@ -66,30 +67,24 @@ Cons:
  * Code is slightly more complex
  * Higher network traffic
 
+### Outcome
 I choose to do solution 2 as I felt that it provided a better user experience in terms
 of speed and better scalability.
 
-###Abstractions
+### Abstractions
 * I decoupled the logic of getting the location of the lat long combos from the worker 
    pool, so that it leaves room for extension, as it will make it easier in the future if 
    we want to process the inputs differently. 
+   So the worker is only responsible for possessing the task by calling `task.Process()`
 
 * For suggestions I use multiple different generators, time based, season based and generic.
   The `suggestor` takes in an interface so won't require code changes if you want to create more
   generators. As you would just need to follow the interface contract of a generator and just pass
   then into the constructor. 
      
-#TODO
+# TODO
  * In a production setting I would pass in the api-token using a config file. 
   
- * I haven't added a system test at the moment. For a system test, it would mean using something like 
-   [direnv](https://direnv.net/) to set a profile file with a valid api-token so that the system tests will
-   test the full end-to-end flow that will actually call the api. 
- 
- * The benchmark test is a bit flakey due to scheduling. Ideally I would take the average 
- of multiple runs rather than just a single run to reduce flakey results when it comes to 
- scheduling go routines.
- 
  * In a production setting I would create a logger and pass in the context. This would
    allow logging with structured arguments that would store the input lat and longs. 
    
@@ -98,8 +93,16 @@ of speed and better scalability.
 
  * I think the anti-corruption layers can be improved, i.e better decoupling on models between the layers
    so that each layer has its own set of models.
+   
+* I haven't added a system test at the moment. For a system test, it would mean using something like 
+  [direnv](https://direnv.net/) to set a profile file with a valid api-token so that the system tests will
+  test the full end-to-end flow that will actually call the api. 
+
+* The benchmark test is a bit flakey due to scheduling. Ideally I would take the average 
+of multiple runs rather than just a single run to reduce flakey results when it comes to 
+    scheduling go routines.
  
-#Notes
+# Notes
 * Uses the [Mapbox](https://www.mapbox.com/) api to perform reverse geo lookup. 
 
 * This project uses [ginkgo](https://github.com/onsi/ginkgo) for tests.
