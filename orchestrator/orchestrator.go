@@ -39,10 +39,10 @@ func New(service Suggestor, geoCoder Client) Orchestrator {
 func (o Orchestrator) Titles(data []domain.Metadata) []domain.Title {
   locations := o.locations(data)
 
-  ss := o.Suggestor.Suggestions(locations)
+  suggestions := o.Suggestor.Suggestions(locations)
 
   var output []domain.Title
-  for _, s := range ss {
+  for _, s := range suggestions {
     output = append(output, domain.Title{
       Latitude:  s.Latitude,
       Longitude: s.Longitude,
@@ -69,12 +69,12 @@ func (o Orchestrator) locations(data []domain.Metadata) []domain.Location {
   var locations []domain.Location
   go func() {
     defer wg.Done()
-    for res := range pool.Output() {
+    for out := range pool.Output() {
       l := domain.Location{
-        Latitude:  res.Lat,
-        Longitude: res.Long,
-        Name:      res.Name,
-        Timestamp: res.Timestamp,
+        Latitude:  out.Lat,
+        Longitude: out.Long,
+        Name:      out.Name,
+        Timestamp: out.Timestamp,
       }
 
       locations = append(locations, l)

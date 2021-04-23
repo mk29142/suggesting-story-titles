@@ -33,19 +33,19 @@ func NewTask(latLong domain.Metadata, geocoder Client) Task {
   }
 }
 
-func (task Task) Process() (Location, error) {
-  res, err := task.GeoCoder.Location(task.Coordinates)
+func (t Task) Process() (Location, error) {
+  location, err := t.GeoCoder.Location(t.Coordinates)
   if err != nil {
     return Location{},
-    domain.NewTaskError(task.Coordinates.Latitude,
-      task.Coordinates.Longitude,
-      fmt.Errorf("failure process task: %w", err))
+    domain.NewTaskError(t.Coordinates.Latitude,
+      t.Coordinates.Longitude,
+      fmt.Errorf("failure process t: %w", err))
     }
 
   return Location{
-    Lat:  res.Latitude,
-    Long: res.Longitude,
-    Name: res.Name,
-    Timestamp: res.Timestamp,
+    Lat:       location.Latitude,
+    Long:      location.Longitude,
+    Name:      location.Name,
+    Timestamp: location.Timestamp,
   }, nil
 }

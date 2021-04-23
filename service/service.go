@@ -34,16 +34,16 @@ func NewSuggestor(generators ...Generator) Service {
 func (s Service) Suggestions(locations []domain.Location) []Suggestion {
   var suggestions []Suggestion
 
-  for _, loc := range locations {
+  for _, l := range locations {
     randIndex := rand.Intn(len(s.Generators))
     randomGenerator := s.Generators[randIndex]
-    title := randomGenerator.Generate(loc)
+    title := randomGenerator.Generate(l)
 
     suggestions = append(suggestions, Suggestion{
-      Latitude:  loc.Latitude,
-      Longitude: loc.Longitude,
-      Timestamp: loc.Timestamp,
-      Name:      loc.Name,
+      Latitude:  l.Latitude,
+      Longitude: l.Longitude,
+      Timestamp: l.Timestamp,
+      Name:      l.Name,
       Title:     title.Title,
     })
   }
