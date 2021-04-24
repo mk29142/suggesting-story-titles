@@ -83,6 +83,9 @@ of speed and better scalability.
   then into the constructor. 
      
 # TODO
+ * Group locations such that one title is produced instead of one per photo. Should be a case of just modifying the 
+   `suggestor` to not call generator on each location but group them first. 
+
  * In a production setting I would pass in the api-token using a config file. 
   
  * In a production setting I would create a logger and pass in the context. This would
